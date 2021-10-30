@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
+from datetime import datetime
 
+import requests
 from google.cloud import pubsub_v1
 
-TOPIC_NAME="splunk"
-SUBSCRIPTION_NAME="splunk"
-
+TOPIC_NAME = "splunk"
+SUBSCRIPTION_NAME = "splunk"
+REQUESTS_TIMEOUT = 3
 
 def get_project_id():
     """
@@ -16,6 +19,24 @@ def get_project_id():
             str: Current Project's ID
     """
     return os.getenv("GOOGLE_CLOUD_PROJECT")
+
+def get_topic_name():
+    """
+    Get the topic name from environment var TOPIC_NAME, OR a default value
+        
+        Returns:
+            str: Default is defined in TOPIC_NAME constant
+    """
+    return os.getenv("TOPIC_NAME", default=TOPIC_NAME)
+
+def get_sub_name():
+    """
+    Get the subscription name from environment var SUB_NAME, OR a default value
+        
+        Returns:
+            str: Default is defined in SUBSCRIPTION_NAME constant
+    """
+    return os.getenv("SUB_NAME", default=SUBSCRIPTION_NAME)
 
 def check_gcp_subscription_exists(sub_name):
     """
@@ -117,7 +138,10 @@ def process_messages(sub_name, callback, blocking=True):
             subscription_path = subscriber.subscription_path(project_id, sub_name)
             future = subscriber.subscribe(subscription_path, callback)
             if blocking:
-                future.result()
+                try:
+                    future.result()
+                except KeyboardInterrupt:
+                    print("[*] KeyboardInterrupt encountered... exiting...")
     else:
         print(f"[-] Project ID could not be read when subscribing to subscription: {sub_name}...")
 
@@ -130,19 +154,62 @@ def check_splunk_env_vars_exist():
     """
     splunk_token = os.getenv("SPLUNK_TOKEN")
     splunk_url = os.getenv("SPLUNK_URL")
-    return (not splunk_url || not splunk_token)
+    return (splunk_url and splunk_token)
 
 
-def send_to_splunk(message):
+def process_single_message(message):
+    """
+    Process a GCP Pub/Sub message received asynchronously and ACK it
+
+        Args:
+            message: GCP Pub/Sub message
+    """
+    try:
+        #body = message.data.decode(errors='ignore')
+        #print(body)
+        message_time = datetime.today().ctime()
+
+        print(f"[*] Processing message at time: {message_time}...")
+        send_to_splunk(message)
+    except Exception as e:
+        print(f"[-] Exception processing message. Details: {e.__class__}, {str(e)}")
+    finally:
+        message.ack()
+
+def send_to_splunk(message, data_error_handling='ignore', ssl_verify=False):
     """Sends messages to Splunk HTTP Event Collector (HEC) based on URL, token defined in OS env vars, SPLUNK_URL 
     and SPLUNK_TOKEN
 
         Args:
-            message(PubsubMessage): Pub/Sub Message
+            message(PubsubMessage): GCP Pub/Sub Message
+            data_error_handling(str): Ignore errors when decoding data
+            ssl_verify(bool): Verify ssl certificate
 
+        Returns:
+            bool: True, if message sent successfully to Splunk. False, otherwise.
     """
-    pass
-
+    message_sent = False
+    try:
+        splunk_token = os.getenv("SPLUNK_TOKEN")
+        splunk_url = os.getenv("SPLUNK_URL")
+        headers = {"Authorization": f"Splunk {splunk_token}"}
+        event = json.loads(message.data.decode(errors=data_error_handling))
+        body = {'event': event}
+        
+        resp = requests.post(splunk_url, headers=headers, json=body, verify=ssl_verify, allow_redirects=True,
+            timeout=REQUESTS_TIMEOUT)
+        status_code = resp.status_code
+        resp_text = resp.text
+        if status_code >= 200 and status_code < 300:
+            # data_recvd = resp.data
+            # print(data_recvd)
+            message_sent = True
+        else:
+            print(f"[-] Error sending message. Status code: {status_code}, Response: {resp_text}...")
+    except Exception as e:
+        print(f"[-] Exception sending message to Splunk. Error: {e.__class__}, {str(e)}")
+    
+    return message_sent
 
 def main():
     splunk_env_vars_defined = check_splunk_env_vars_exist()
@@ -150,15 +217,24 @@ def main():
         print(f"[-] Splunk environment variables not defined")
         return 1
 
-    if not check_gcp_topic_exists(TOPIC_NAME):
-        print(f"[-] GCP Pub/Sub topic: {TOPIC_NAME} does not exist")
+    topic_name = get_topic_name()
+    print(f"[*] topic_name: {topic_name}")
+
+    sub_name = get_topic_name()
+    print(f"[*] sub_name: {sub_name}")
+
+    if not check_gcp_topic_exists(topic_name):
+        print(f"[-] GCP Pub/Sub topic: {topic_name} does not exist")
         return 1
 
-    if not check_gcp_subscription_exists(SUBSCRIPTION_NAME):
-        if not build_subscription(TOPIC_NAME, SUBSCRIPTION_NAME):
-            print(f"[-] Subscription: {SUBSCRIPTION_NAME} not created")
+    if not check_gcp_subscription_exists(sub_name):
+        if not build_subscription(topic_name, sub_name):
+            print(f"[-] Subscription: {sub_name} not created")
             return 1
+    else:
+        print(f"[*] Reading from existing subscription: {sub_name}...")
     
+    process_messages(sub_name, process_single_message)
     
     return 0
 
