@@ -129,4 +129,6 @@ dmypy.json
 .pyre/
 
 # Ignore service files
-*.json
+**/*.json
+**/.DS_store
+

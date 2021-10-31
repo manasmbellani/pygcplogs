@@ -12,3 +12,10 @@ A Dockerfile has been provided to setup the project
 docker build -t pygcplogssplunk:latest .
 ```
 
+## Usage
+
+### Via GCP Cloud Shell
+```
+cd ~/pygcplogssplunk
+SPLUNK_URL="http://$SPLUNK_HOST:8088/services/collector" SPLUNK_TOKEN="$SPLUNK_TOKEN" python3 pygcplogssplunk.py
+```

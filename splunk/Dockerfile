@@ -8,5 +8,5 @@ RUN apk add --update \
     g++
 
 COPY . /opt/app
-RUN python3 -m pip install -r /opt/app/requirements.txt
+# RUN python3 -m pip install -r /opt/app/requirements.txt
 WORKDIR /opt/app
