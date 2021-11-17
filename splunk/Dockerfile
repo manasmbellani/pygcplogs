@@ -5,8 +5,28 @@ RUN apk add --update \
     bash \
     python3 \
     py3-pip \
-    g++
+    g++ \
+    build-base \
+    linux-headers \
+    python3-dev \
+    gcc \
+    make
 
 COPY . /opt/app
-# RUN python3 -m pip install -r /opt/app/requirements.txt
+
+# Install required deps
+RUN python3 -m pip install --upgrade \
+    pip \
+    requests \
+    virtualenv \
+    setuptools
+
+# Install google cloud pubsub
+RUN mkdir /opt/google-cloud-pubsub && \
+    cd /opt/google-cloud-pubsub && \
+    python3 -m virtualenv venv && \
+    source virtualenv/venv/bin/activate && \
+    python3 -m pip install google-cloud-pubsub && \
+    deactivate
+
 WORKDIR /opt/app
