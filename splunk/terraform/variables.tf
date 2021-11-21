@@ -6,19 +6,19 @@ variable google_project_id {
 
 variable pubsub_topic_name {
   type        = string
-  default     = "splunk2"
+  default     = "splunk"
   description = "Pub/Sub topic to which log messages are written"
 }
 
 variable pubsub_subscription_name {
   type        = string
-  default     = "splunk2"
+  default     = "splunk"
   description = "Pub/Sub subscription to which log messages are written"
 }
 
 variable project_log_sink_name {
     type = string
-    default = "splunk2"
+    default = "splunk"
     description = "Name of Log sink to read all logs from the project"
 }
 
