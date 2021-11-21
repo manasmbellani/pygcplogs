@@ -36,14 +36,14 @@ docker run -v /opt/pygcplogs/splunk:/opt/app -it pygcplogssplunk /bin/bash
 ### Deploy infrastructure such as Pub/Sub Topic, Subscription and Log sink
 
 #### Via Terraform in Docker
+Configure the `google_project_id` in `variables.tf` file
+
+Then execute the command below to create the pub/sub topics
 ```
 GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json terraform apply -auto-approve
 ```
 
 ## Usage
-
-### Configure the log reader
-Configure the `google_project_id` in `variables.tf` file
 
 ### Start the log reader
 
@@ -55,7 +55,7 @@ source venv/bin/activate
 GOOGLE_CLOUD_PROJECT="active-campus-325505" SPLUNK_URL="http://54.153.162.91:8088/services/collector" SPLUNK_TOKEN="$SPLUNK_TOKEN" GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json python3 /opt/app/pygcplogs.py
 ```
 
-### Via GCP Cloud Shell
+#### Via GCP Cloud Shell
 ```
 cd ~/pygcplogssplunk
 
