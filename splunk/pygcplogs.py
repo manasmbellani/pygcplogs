@@ -220,7 +220,7 @@ def main():
     topic_name = get_topic_name()
     print(f"[*] topic_name: {topic_name}")
 
-    sub_name = get_topic_name()
+    sub_name = get_sub_name()
     print(f"[*] sub_name: {sub_name}")
 
     if not check_gcp_topic_exists(topic_name):

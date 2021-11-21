@@ -10,7 +10,8 @@ RUN apk add --update \
     linux-headers \
     python3-dev \
     gcc \
-    make
+    make \
+    terraform
 
 COPY . /opt/app
 

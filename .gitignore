@@ -132,3 +132,7 @@ dmypy.json
 **/*.json
 **/.DS_store
 
+# Terraform files to ignore
+**/.terraform
+**/*.hcl
+**/*.tfstate*
