@@ -5,9 +5,21 @@ resource "google_pubsub_topic" "pubsub_topic" {
   }
 }
 
+# Provide access to the logging sink via the writer identity to publish 
+# message to the topic
+resource "google_pubsub_topic_iam_binding" "pubsub_topic_binding_for_logsink" {
+  project = var.google_project_id
+  topic = var.pubsub_topic_name
+  role = "roles/pubsub.publisher"
+  members = [
+    google_logging_project_sink.project_log_sink.writer_identity,
+  ]
+}
+
 output "pubsub_topic_id" {
   value       = google_pubsub_topic.pubsub_topic.id
   description = "ID of the topic to which logs are written"
+
 }
 
 
@@ -31,5 +43,6 @@ resource "google_logging_project_sink" "project_log_sink" {
   # Use a unique writer (creates a unique service account used for writing)
   unique_writer_identity = true
 
-  disabled = true
+  # To disable the log sink, uncomment this
+  #disabled = true
 }

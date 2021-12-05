@@ -1,6 +1,6 @@
 variable google_project_id {
+    # Defined via inbound environment variable - TF_VAR_google_project_id
     type = string
-    default = "active-campus-325505"
     description = "Project ID"
 }
 

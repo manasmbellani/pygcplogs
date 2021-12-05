@@ -15,8 +15,9 @@ configured to receive GCP logs
 
 Create a service eg. named `pygcplogs` with the following permissions in the 
 project: 
-* PubSub Admin
-* Logging Admin
+* PubSub Admin - Ability to create pub/sub topic, subscription and assign the 
+log router sink
+* Logging Admin - Ability to create log router sink
 
 Download the JSON service account key `pygcplogs-service-account-key.json` and store 
 it in folder `/opt/pygcplogs/splunk`
@@ -36,28 +37,52 @@ docker run -v /opt/pygcplogs/splunk:/opt/app -it pygcplogssplunk /bin/bash
 ### Deploy infrastructure such as Pub/Sub Topic, Subscription and Log sink
 
 #### Via Terraform in Docker
-Configure the `google_project_id` in `variables.tf` file
+Configure the `google_project_id` in `variables.tf` file if we wish to change the
+name or description of pub/sub topics, subscription or logging sink
 
 Then execute the command below to create the pub/sub topics
 ```
-GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json terraform apply -auto-approve
+cd /opt/app/terraform
+GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json \
+TF_VAR_google_project_id="active-campus-325505" \
+terraform apply -auto-approve
 ```
 
 ## Usage
 
-### Start the log reader
+### Start the log forwarder
 
 #### Via Docker
+First define the Splunk token, IP and project ID to read the logs from: 
+```
+SPLUNK_IP="...."
+SPLUNK_TOKEN="...."
+PROJECT_ID="..."
+```
+
+Start the log forwarder:
 ```
 cd /opt/google-cloud-pubsub
 source venv/bin/activate
 
-GOOGLE_CLOUD_PROJECT="active-campus-325505" SPLUNK_URL="http://54.153.162.91:8088/services/collector" SPLUNK_TOKEN="$SPLUNK_TOKEN" GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json python3 /opt/app/pygcplogs.py
+GOOGLE_CLOUD_PROJECT="$PROJECT_ID" \
+SPLUNK_URL="http://$SPLUNK_IP:8088/services/collector" \
+SPLUNK_TOKEN="$SPLUNK_TOKEN" \
+GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json \
+python3 /opt/app/pygcplogs.py
 ```
 
 #### Via GCP Cloud Shell
+This is similar to launching from docker container and requires the same env 
+vars to be set as Docker container above
 ```
 cd ~/pygcplogssplunk
 
-SPLUNK_URL="http://54.153.162.91:8088/services/collector" SPLUNK_TOKEN="$SPLUNK_TOKEN" GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT_ID" GOOGLE_APPLICATION_CREDENTIALS="$GOOGLE_APPLICATION_CREDENTIALS_FILE" python3 pygcplogssplunk.py
+gcloud config set project "$PROJECT_ID"
+
+SPLUNK_URL="http://$SPLUNK_IP:8088/services/collector" \
+SPLUNK_TOKEN="$SPLUNK_TOKEN" \
+GOOGLE_CLOUD_PROJECT="$PROJECT_ID" \
+GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json \
+python3 pygcplogssplunk.py
 ```
