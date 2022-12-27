@@ -26,7 +26,7 @@ RUN python3 -m pip install --upgrade \
 RUN mkdir /opt/google-cloud-pubsub && \
     cd /opt/google-cloud-pubsub && \
     python3 -m virtualenv venv && \
-    source virtualenv/venv/bin/activate && \
+    source venv/bin/activate && \
     python3 -m pip install google-cloud-pubsub && \
     deactivate
 
