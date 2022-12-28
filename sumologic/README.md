@@ -58,6 +58,11 @@ Then execute the command below to create the pub/sub topics:
 ```
 cd /opt/app/terraform
 PROJECT_ID="..."
+
+# Initialize terraform
+terraform init
+
+# Deploy infra
 GOOGLE_APPLICATION_CREDENTIALS=/opt/app/pygcplogs-service-account-key.json \
 TF_VAR_google_project_id="$PROJECT_ID" \
 terraform apply -auto-approve
